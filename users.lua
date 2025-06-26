@@ -163,7 +163,7 @@ local function on_player_connect(name, kick, deferrals)
     local result = bdtk.check_if_user_data_exists(ids.license)
     if result[1] then
         update_deferral(deferrals, "User data found. Checking bans...", 500)
-        if bdtk.is_player_banned(result[1], deferrals) then return end
+        if is_player_banned(result[1], deferrals) then return end
         update_deferral(deferrals, "Welcome back!", 500)
         temp_connected_users[ids.license] = { unique_id = result[1].unique_id, rank = result[1].rank }
     else
