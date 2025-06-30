@@ -14,27 +14,29 @@
 
 local items = {}
 
-if not bdtk.is_server then return end
+if bdtk.is_server then 
 
-bdtk.usable_items = bdtk.usable_items or {}
+    bdtk.usable_items = bdtk.usable_items or {}
 
---- @section Local functions
+    --- @section Local functions
 
---- Function to register an item as usable.
---- @param item_id The identifier of the item.
---- @param use_function The function to be executed when the item is used.
-function items.register_item(item_id, use_function)
-    bdtk.usable_items[item_id] = use_function
-end
-
---- Function to use a registered item
---- @param item_id The identifier of the item.
-function items.use_item(source, item_id)
-    if bdtk.usable_items[item_id] then
-        bdtk.usable_items[item_id](source, item_id)
-    else
-        print("Item with ID " .. item_id .. " is not registered as usable.")
+    --- Function to register an item as usable.
+    --- @param item_id The identifier of the item.
+    --- @param use_function The function to be executed when the item is used.
+    function items.register_item(item_id, use_function)
+        bdtk.usable_items[item_id] = use_function
     end
+
+    --- Function to use a registered item
+    --- @param item_id The identifier of the item.
+    function items.use_item(source, item_id)
+        if bdtk.usable_items[item_id] then
+            bdtk.usable_items[item_id](source, item_id)
+        else
+            print("Item with ID " .. item_id .. " is not registered as usable.")
+        end
+    end
+
 end
 
 return items
