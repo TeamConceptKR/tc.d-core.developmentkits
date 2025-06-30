@@ -85,8 +85,6 @@ function profanity.has(input)
     return false
 end
 
-exports("has_profanity", profanity.has)
-
 --- Clean a string by replacing or masking profane words
 --- @param input string
 --- @param use_mask boolean: If true, replace with asterisks instead of replacements
@@ -106,7 +104,5 @@ function profanity.clean(input, use_mask)
 
     return cleaned
 end
-
-exports("clean_profanity", profanity.clean)
 
 return profanity
