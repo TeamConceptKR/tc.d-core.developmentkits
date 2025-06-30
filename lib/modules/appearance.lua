@@ -117,235 +117,237 @@ end
 
 --- @section Variables
 
-if bdtk.is_server then return {} end
+if not bdtk.is_server then
 
-local current_sex = "m" -- Current sex of the player, used to determine specific appearance settings.
-local preview_ped = (current_sex == "m") and "mp_m_freemode_01" or "mp_f_freemode_01" -- Model identifier for the preview ped.
-local cam = nil -- Camera object for viewing the ped.
-local default_styles = tables.deep_copy(ped_styles) -- Store default styles for resets.
+    local current_sex = "m" -- Current sex of the player, used to determine specific appearance settings.
+    local preview_ped = (current_sex == "m") and "mp_m_freemode_01" or "mp_f_freemode_01" -- Model identifier for the preview ped.
+    local cam = nil -- Camera object for viewing the ped.
+    local default_styles = tables.deep_copy(ped_styles) -- Store default styles for resets.
 
---- @section Internal Functions
+    --- @section Internal Functions
 
---- Apply an overlay to the ped.
---- @param player PlayerPedId(): The players ped instance.
---- @param overlay table: Overlay configuration containing index, style, opacity, and color keys.
---- @param barber_data table: Barber data containing overlay values.
-local function apply_overlay(player, overlay, barber_data)
-    local style = tonumber(barber_data[overlay.style]) or 0
-    local opacity = (tonumber(barber_data[overlay.opacity]) or 0) / 100
+    --- Apply an overlay to the ped.
+    --- @param player PlayerPedId(): The players ped instance.
+    --- @param overlay table: Overlay configuration containing index, style, opacity, and color keys.
+    --- @param barber_data table: Barber data containing overlay values.
+    local function apply_overlay(player, overlay, barber_data)
+        local style = tonumber(barber_data[overlay.style]) or 0
+        local opacity = (tonumber(barber_data[overlay.opacity]) or 0) / 100
 
-    SetPedHeadOverlay(player, overlay.index, style, opacity)
+        SetPedHeadOverlay(player, overlay.index, style, opacity)
 
-    if overlay.colour then
-        local colour = tonumber(barber_data[overlay.colour])
-        if colour then
-            SetPedHeadOverlayColor(player, overlay.index, 1, colour, colour)
-        else
-            debugging.log("err", "bdtk", "Invalid overlay colour for " .. overlay.style)
+        if overlay.colour then
+            local colour = tonumber(barber_data[overlay.colour])
+            if colour then
+                SetPedHeadOverlayColor(player, overlay.index, 1, colour, colour)
+            else
+                debugging.log("err", "bdtk", "Invalid overlay colour for " .. overlay.style)
+            end
         end
     end
-end
 
---- Apply a clothing item to the ped.
---- @param player PlayerPedId(): The players ped instance.
---- @param item table: Clothing item configuration containing index, style, and texture keys.
---- @param clothing_data table: Clothing data containing item values.
-local function apply_clothing(player, item, clothing_data)
+    --- Apply a clothing item to the ped.
+    --- @param player PlayerPedId(): The players ped instance.
+    --- @param item table: Clothing item configuration containing index, style, and texture keys.
+    --- @param clothing_data table: Clothing data containing item values.
+    local function apply_clothing(player, item, clothing_data)
 
-    local style = tonumber(clothing_data[item.style]) or -1
-    local texture = tonumber(clothing_data[item.texture]) or 0
+        local style = tonumber(clothing_data[item.style]) or -1
+        local texture = tonumber(clothing_data[item.texture]) or 0
 
-    if style >= 0 then
-        if item.is_prop then
-            SetPedPropIndex(player, item.index, style, texture, true)
-        else
-            SetPedComponentVariation(player, item.index, style, texture, 0)
+        if style >= 0 then
+            if item.is_prop then
+                SetPedPropIndex(player, item.index, style, texture, true)
+            else
+                SetPedComponentVariation(player, item.index, style, texture, 0)
+            end
         end
     end
-end
 
---- Apply tattoos to the ped.
---- @param player PlayerPedId(): The players ped instance.
---- @param tattoos table: Table of tattoo data containing zones and tattoo info.
---- @param sex string: The sex of the ped ("m" or "f").
-local function apply_tattoos(player, tattoos, sex)
-    if not tattoos then debugging.log("err", "bdtk", "No tattoo data found in character data.") return end
+    --- Apply tattoos to the ped.
+    --- @param player PlayerPedId(): The players ped instance.
+    --- @param tattoos table: Table of tattoo data containing zones and tattoo info.
+    --- @param sex string: The sex of the ped ("m" or "f").
+    local function apply_tattoos(player, tattoos, sex)
+        if not tattoos then debugging.log("err", "bdtk", "No tattoo data found in character data.") return end
 
-    for _, zone_tattoos in pairs(tattoos) do
-        if type(zone_tattoos) == "table" then
-            for _, tattoo_info in ipairs(zone_tattoos) do
-                if tattoo_info and tattoo_info.name and tattoo_info.name ~= "none" then
-                    local hash = GetHashKey(sex == "m" and tattoo_info.hash_m or tattoo_info.hash_f)
-                    local collection = GetHashKey(tattoo_info.collection)
-                    
-                    if collection and hash then
-                        SetPedDecoration(player, collection, hash)
-                    else
-                        debugging.log("err", "bdtk", "Invalid tattoo data in zone.")
+        for _, zone_tattoos in pairs(tattoos) do
+            if type(zone_tattoos) == "table" then
+                for _, tattoo_info in ipairs(zone_tattoos) do
+                    if tattoo_info and tattoo_info.name and tattoo_info.name ~= "none" then
+                        local hash = GetHashKey(sex == "m" and tattoo_info.hash_m or tattoo_info.hash_f)
+                        local collection = GetHashKey(tattoo_info.collection)
+                        
+                        if collection and hash then
+                            SetPedDecoration(player, collection, hash)
+                        else
+                            debugging.log("err", "bdtk", "Invalid tattoo data in zone.")
+                        end
                     end
                 end
             end
         end
     end
-end
 
---- @section API Functions
+    --- @section API Functions
 
---- Gets clothing and prop values for UI inputs.
---- @param sex string: The sex of the current ped model ("m" or "f").
---- @return table: A table with the maximum values for each clothing and prop item.
-function appearance.get_clothing_and_prop_values(sex)
-    if not sex == "m" or not sex == "f" then debugging.log("err", "Function: get_clothing_and_prop_values failed | Reason: Invalid parameters for sex. - Use m or f only.") return end
-    local data = ped_styles[sex]
+    --- Gets clothing and prop values for UI inputs.
+    --- @param sex string: The sex of the current ped model ("m" or "f").
+    --- @return table: A table with the maximum values for each clothing and prop item.
+    function appearance.get_clothing_and_prop_values(sex)
+        if not sex == "m" or not sex == "f" then debugging.log("err", "Function: get_clothing_and_prop_values failed | Reason: Invalid parameters for sex. - Use m or f only.") return end
+        local data = ped_styles[sex]
 
-    local values = {
-        hair = GetNumberOfPedDrawableVariations(PlayerPedId(), 2) - 1,
-        fade = GetNumberOfPedTextureVariations(PlayerPedId(), 2, tonumber(data.barber.hair)) - 1,
-        eyebrow = GetPedHeadOverlayNum(2) - 1,
-        mask = GetNumberOfPedDrawableVariations(PlayerPedId(), 1) - 1,
-        mask_texture = GetNumberOfPedTextureVariations(PlayerPedId(), 1, tonumber(data.clothing.mask_style) - 1)
-    }
+        local values = {
+            hair = GetNumberOfPedDrawableVariations(PlayerPedId(), 2) - 1,
+            fade = GetNumberOfPedTextureVariations(PlayerPedId(), 2, tonumber(data.barber.hair)) - 1,
+            eyebrow = GetPedHeadOverlayNum(2) - 1,
+            mask = GetNumberOfPedDrawableVariations(PlayerPedId(), 1) - 1,
+            mask_texture = GetNumberOfPedTextureVariations(PlayerPedId(), 1, tonumber(data.clothing.mask_style) - 1)
+        }
 
-    return values
-end
-
---- Set ped hair, makeup, genetics, and clothing etc.
---- @param player PlayerPedId(): The players ped instance.
---- @param data table: The data object containing appearance settings for genetics, hair, makeup, tattoos, and clothing.
-function appearance.set_ped_appearance(player, data)
-    if not player or not data then debugging.log("err", "Function: set_ped_appearance failed | Reason: Missing required parameters (player or data).") return end
-
-    local genetics = data.genetics
-    SetPedHeadBlendData(player, genetics.mother, genetics.father, nil, genetics.mother, genetics.father, nil, genetics.resemblence, genetics.skin, nil, true)
-    SetPedEyeColor(player, genetics.eye_colour)
-
-    local barber = data.barber
-    SetPedComponentVariation(player, 2, barber.hair, 0, 0)
-    SetPedHairColor(barber.hair_colour, barber.highlight_colour)
-
-    for _, feature in ipairs(facial_features) do
-        SetPedFaceFeature(player, feature.id, tonumber(genetics[feature.value]) or 0)
+        return values
     end
 
-    for _, overlay in ipairs(overlays) do
-        apply_overlay(player, overlay, barber)
+    --- Set ped hair, makeup, genetics, and clothing etc.
+    --- @param player PlayerPedId(): The players ped instance.
+    --- @param data table: The data object containing appearance settings for genetics, hair, makeup, tattoos, and clothing.
+    function appearance.set_ped_appearance(player, data)
+        if not player or not data then debugging.log("err", "Function: set_ped_appearance failed | Reason: Missing required parameters (player or data).") return end
+
+        local genetics = data.genetics
+        SetPedHeadBlendData(player, genetics.mother, genetics.father, nil, genetics.mother, genetics.father, nil, genetics.resemblence, genetics.skin, nil, true)
+        SetPedEyeColor(player, genetics.eye_colour)
+
+        local barber = data.barber
+        SetPedComponentVariation(player, 2, barber.hair, 0, 0)
+        SetPedHairColor(barber.hair_colour, barber.highlight_colour)
+
+        for _, feature in ipairs(facial_features) do
+            SetPedFaceFeature(player, feature.id, tonumber(genetics[feature.value]) or 0)
+        end
+
+        for _, overlay in ipairs(overlays) do
+            apply_overlay(player, overlay, barber)
+        end
+
+        for _, item in ipairs(clothing_items) do
+            apply_clothing(player, item, data.clothing)
+        end
+
+        ClearPedDecorations(player)
+
+        apply_tattoos(player, data.tattoos, data.sex)
+
+        debugging.log("info", "Ped appearance successfully updated.")
     end
 
-    for _, item in ipairs(clothing_items) do
-        apply_clothing(player, item, data.clothing)
-    end
+    --- Updates ped_styles with new values to be displayed on the player.
+    --- @param sex string: The sex to select from creation style.
+    --- @param category string: The type of data being updated (e.g., "genetics", "barber", "tattoos").
+    --- @param id string|nil: The specific index within the data type being updated. For tattoos, this is the zone name.
+    --- @param value any: The new value to be set. For tattoos, this is the tattoo data table to insert.
+    function appearance.update_ped_appearance(sex, category, id, value)
+        if not sex or not category or value == nil then debugging.log("err", "Function: update_ped_appearance failed | Reason: Missing required parameters.") return end
 
-    ClearPedDecorations(player)
+        if category == "tattoos" and id and type(value) == "table" then
+            if not ped_styles[sex].tattoos[id] then debugging.log("err", "Function: update_ped_appearance failed | Reason: Invalid tattoo zone: " .. tostring(id)) return end
 
-    apply_tattoos(player, data.tattoos, data.sex)
+            table.insert(ped_styles[sex].tattoos[id], value)
+            current_sex = sex
+            preview_ped = (sex == "m") and "mp_m_freemode_01" or "mp_f_freemode_01"
+            appearance.set_ped_appearance(PlayerPedId(), ped_styles[sex])
+            return
+        end
 
-    debugging.log("info", "Ped appearance successfully updated.")
-end
+        if id == "resemblance" or id == "skin" then
+            value = value / 100
+        end
 
---- Updates ped_styles with new values to be displayed on the player.
---- @param sex string: The sex to select from creation style.
---- @param category string: The type of data being updated (e.g., "genetics", "barber", "tattoos").
---- @param id string|nil: The specific index within the data type being updated. For tattoos, this is the zone name.
---- @param value any: The new value to be set. For tattoos, this is the tattoo data table to insert.
-function appearance.update_ped_appearance(sex, category, id, value)
-    if not sex or not category or value == nil then debugging.log("err", "Function: update_ped_appearance failed | Reason: Missing required parameters.") return end
+        if id and type(ped_styles[sex][category][id]) == "table" then
+            for k, _ in pairs(ped_styles[sex][category][id]) do
+                ped_styles[sex][category][id][k] = value[k]
+            end
+        elseif id then
+            ped_styles[sex][category][id] = value
+        else
+            ped_styles[sex][category] = value
+        end
 
-    if category == "tattoos" and id and type(value) == "table" then
-        if not ped_styles[sex].tattoos[id] then debugging.log("err", "Function: update_ped_appearance failed | Reason: Invalid tattoo zone: " .. tostring(id)) return end
-
-        table.insert(ped_styles[sex].tattoos[id], value)
         current_sex = sex
         preview_ped = (sex == "m") and "mp_m_freemode_01" or "mp_f_freemode_01"
+
         appearance.set_ped_appearance(PlayerPedId(), ped_styles[sex])
-        return
     end
 
-    if id == "resemblance" or id == "skin" then
-        value = value / 100
+    --- Change the players ped model based on the selected sex.
+    --- @param sex string: The sex of the ped model to switch to ("m" or "f").
+    function appearance.change_player_ped(sex)
+        if not sex then debugging.log("err", "Function: change_player_ped failed. | Reason: Player sex was not provided.") return end
+
+        current_sex = sex
+        preview_ped = (sex == "m") and "mp_m_freemode_01" or "mp_f_freemode_01"
+
+        local model = GetHashKey(preview_ped)
+
+        requests.model(model)
+
+        SetPlayerModel(PlayerId(), model)
+
+        appearance.set_ped_appearance(PlayerPedId(), ped_styles[sex])
     end
 
-    if id and type(ped_styles[sex][category][id]) == "table" then
-        for k, _ in pairs(ped_styles[sex][category][id]) do
-            ped_styles[sex][category][id][k] = value[k]
+    --- Rotate the players ped in a specific direction.
+    --- @param direction string: The direction to rotate the ped ("right", "left", "flip", "reset").
+    function appearance.appearance_rotate_ped(direction)
+        if not direction then return debugging.log("err", "Function: appearance_rotate_ped failed. | Reason: Direction parameter is missing.") end
+
+        local player_ped = PlayerPedId()
+        local current_heading = GetEntityHeading(player_ped)
+        original_heading = original_heading or current_heading
+
+        local rotations = {
+            right = current_heading + 45,
+            left = current_heading - 45,
+            flip = current_heading + 180,
+            reset = original_heading
+        }
+
+        local new_heading = rotations[direction]
+        if not new_heading then debugging.log("err", "Function: appearance_rotate_ped failed. | Reason: Invalid direction parameter - Use right, left, flip, reset.") return end
+
+        if direction == "rotate_ped_reset" then
+            original_heading = nil
         end
-    elseif id then
-        ped_styles[sex][category][id] = value
-    else
-        ped_styles[sex][category] = value
+
+        SetEntityHeading(player_ped, new_heading)
     end
 
-    current_sex = sex
-    preview_ped = (sex == "m") and "mp_m_freemode_01" or "mp_f_freemode_01"
+    --- Load and apply a character model.
+    --- @function load_player_appearance
+    --- @param data table: All the data for the players character to be set on the ped.
+    function appearance.load_player_appearance(data)
+        if not data.identity or not data.style.genetics or not data.style.barber or not data.style.clothing or not data.style.tattoos then debugging.log("err", "bdtk", "Function: load_player_appearance failed. | Reason: One or more required parameters are missing.") return end
 
-    appearance.set_ped_appearance(PlayerPedId(), ped_styles[sex])
-end
+        current_sex = data.identity.sex
+        
+        local model = GetHashKey(preview_ped)
+        if not requests.model(model) then debugging.log("err", "Function: load_player_appearance failed. | Reason: Failed to request model: " .. preview_ped) return end
 
---- Change the players ped model based on the selected sex.
---- @param sex string: The sex of the ped model to switch to ("m" or "f").
-function appearance.change_player_ped(sex)
-    if not sex then debugging.log("err", "Function: change_player_ped failed. | Reason: Player sex was not provided.") return end
+        local player_id = PlayerId()
+        local player_ped = PlayerPedId()
 
-    current_sex = sex
-    preview_ped = (sex == "m") and "mp_m_freemode_01" or "mp_f_freemode_01"
+        SetPlayerModel(player_id, model)
+        SetPedComponentVariation(player_ped, 0, 0, 0, 1)
 
-    local model = GetHashKey(preview_ped)
+        ped_styles[current_sex].genetics = data.style.genetics
+        ped_styles[current_sex].barber = data.style.barber
+        ped_styles[current_sex].clothing = data.style.clothing
+        ped_styles[current_sex].tattoos = data.style.tattoos
 
-    requests.model(model)
-
-    SetPlayerModel(PlayerId(), model)
-
-    appearance.set_ped_appearance(PlayerPedId(), ped_styles[sex])
-end
-
---- Rotate the players ped in a specific direction.
---- @param direction string: The direction to rotate the ped ("right", "left", "flip", "reset").
-function appearance.appearance_rotate_ped(direction)
-    if not direction then return debugging.log("err", "Function: appearance_rotate_ped failed. | Reason: Direction parameter is missing.") end
-
-    local player_ped = PlayerPedId()
-    local current_heading = GetEntityHeading(player_ped)
-    original_heading = original_heading or current_heading
-
-    local rotations = {
-        right = current_heading + 45,
-        left = current_heading - 45,
-        flip = current_heading + 180,
-        reset = original_heading
-    }
-
-    local new_heading = rotations[direction]
-    if not new_heading then debugging.log("err", "Function: appearance_rotate_ped failed. | Reason: Invalid direction parameter - Use right, left, flip, reset.") return end
-
-    if direction == "rotate_ped_reset" then
-        original_heading = nil
+        appearance.set_ped_appearance(player_ped, ped_styles[current_sex])
     end
 
-    SetEntityHeading(player_ped, new_heading)
-end
-
---- Load and apply a character model.
---- @function load_player_appearance
---- @param data table: All the data for the players character to be set on the ped.
-function appearance.load_player_appearance(data)
-    if not data.identity or not data.style.genetics or not data.style.barber or not data.style.clothing or not data.style.tattoos then debugging.log("err", "bdtk", "Function: load_player_appearance failed. | Reason: One or more required parameters are missing.") return end
-
-    current_sex = data.identity.sex
-    
-    local model = GetHashKey(preview_ped)
-    if not requests.model(model) then debugging.log("err", "Function: load_player_appearance failed. | Reason: Failed to request model: " .. preview_ped) return end
-
-    local player_id = PlayerId()
-    local player_ped = PlayerPedId()
-
-    SetPlayerModel(player_id, model)
-    SetPedComponentVariation(player_ped, 0, 0, 0, 1)
-
-    ped_styles[current_sex].genetics = data.style.genetics
-    ped_styles[current_sex].barber = data.style.barber
-    ped_styles[current_sex].clothing = data.style.clothing
-    ped_styles[current_sex].tattoos = data.style.tattoos
-
-    appearance.set_ped_appearance(player_ped, ped_styles[current_sex])
 end
 
 return appearance
