@@ -84,4 +84,27 @@ function tables.deep_compare(t1, t2)
     return true
 end
 
+--- Deeply merges two tables (b into a), without mutating original tables.
+--- @param a table: The base table (usually defaults).
+--- @param b table: The override table (e.g., strain).
+--- @return table: A new table containing the merged result.
+function tables.deep_merge(a, b)
+    local result = tables.deep_copy(a)
+
+    for k, v in pairs(b) do
+        if type(v) == "table" and type(result[k]) == "table" then
+            local is_array = (#v > 0 or #result[k] > 0)
+            if not is_array then
+                result[k] = tables.deep_merge(result[k], v)
+            else
+                result[k] = v
+            end
+        else
+            result[k] = v
+        end
+    end
+
+    return result
+end
+
 return tables
