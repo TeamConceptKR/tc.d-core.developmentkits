@@ -349,7 +349,7 @@ if bdtk.is_server then
         local job_found = false
         local on_duty_status = false
 
-        if tables.contains(job_names, player_jobs.name) then
+        if tables.table_contains(job_names, player_jobs.name) then
             job_found = true
             on_duty_status = player_jobs.onduty
         end
