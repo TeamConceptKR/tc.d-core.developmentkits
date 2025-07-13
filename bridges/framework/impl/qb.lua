@@ -271,7 +271,7 @@ if bdtk.is_server then
     --- @return Boolean indicating if the player has any of the specified jobs and meets the on-duty condition.
     function bridge.player_has_job(source, job_names, check_on_duty)
         local job = bridge.get_player_jobs(source)
-        local match = tables.contains(job_names, job.name)
+        local match = tables.table_contains(job_names, job.name)
         return match and (not check_on_duty or job.onduty)
     end
 
