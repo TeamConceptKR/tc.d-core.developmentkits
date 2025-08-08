@@ -35,10 +35,12 @@ lua54 "yes"
 fx_version "cerulean"
 game "gta5"
 
-server_script "@oxmysql/lib/MySQL.lua"
+server_script "@tc.d-database.ext-oxmysql/lib/MySQL.lua"
 
 shared_script "init.lua"
 server_script "users.lua" -- Required! user accounts handle permissions for commands etc.. dont remove.
+
+provide "bdtk"
 
 shared_scripts {
     "lib/events/*.lua",
