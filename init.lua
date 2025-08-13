@@ -109,8 +109,9 @@ local function auto_detect(flag_key, option_key, list, default_value, label)
 end
 
 auto_detect("auto_detect_framework", "framework", bdtk.framework_map, "standalone", "Framework")
-auto_detect("auto_detect_drawtext", "drawtext_ui", bdtk.drawtext_ui_map, "default")
-auto_detect("auto_detect_notify", "notify", bdtk.notify_map, "default")
+-- Correct flags (original property names use *_drawtext_ui / *_notify ) ensure both legacy and current
+auto_detect("auto_detect_drawtext_ui", "drawtext_ui", bdtk.drawtext_ui_map, "standalone")
+auto_detect("auto_detect_notify", "notify", bdtk.notify_map, "standalone")
 
 --- @section Safe Require Function
 
